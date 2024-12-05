@@ -1,3 +1,4 @@
+from builtins import Exception
 from fastapi import FastAPI
 from starlette.responses import JSONResponse
 from app.database import Database
@@ -26,5 +27,3 @@ async def exception_handler(request, exc):
     return JSONResponse(status_code=500, content={"message": "An unexpected error occurred."})
 
 app.include_router(user_routes.router)
-
-

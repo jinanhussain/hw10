@@ -1,23 +1,7 @@
-"""
-File: test_database_operations.py
-
-Overview:
-This Python test file utilizes pytest to manage database states and HTTP clients for testing a web application built with FastAPI and SQLAlchemy. It includes detailed fixtures to mock the testing environment, ensuring each test is run in isolation with a consistent setup.
-
-Fixtures:
-- `async_client`: Manages an asynchronous HTTP client for testing interactions with the FastAPI application.
-- `db_session`: Handles database transactions to ensure a clean database state for each test.
-- User fixtures (`user`, `locked_user`, `verified_user`, etc.): Set up various user states to test different behaviors under diverse conditions.
-- `token`: Generates an authentication token for testing secured endpoints.
-- `initialize_database`: Prepares the database at the session start.
-- `setup_database`: Sets up and tears down the database before and after each test.
-"""
-
 # Standard library imports
-from builtins import range
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
-from uuid import uuid4
+import uuid  # Correct import for UUID
 
 # Third-party imports
 import pytest
@@ -64,6 +48,28 @@ async def async_client(db_session):
         finally:
             app.dependency_overrides.clear()
 
+# Fixture to generate a regular user token
+@pytest.fixture
+async def user_token(db_session, user):
+    """Fixture to generate a regular user token."""
+    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+    token = create_access_token(
+        data={"sub": user.email, "role": str(user.role.name)},  # Pass data as keyword argument
+        expires_delta=access_token_expires  # Pass expires_delta as keyword argument
+    )
+    return token
+
+# Fixture to generate an admin token
+@pytest.fixture
+async def admin_token(db_session, admin_user):
+    """Fixture to generate an admin token."""
+    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+    token = create_access_token(
+        data={"sub": admin_user.email, "role": str(admin_user.role.name)},  # Pass data as keyword argument
+        expires_delta=access_token_expires  # Pass expires_delta as keyword argument
+    )
+    return token
+
 @pytest.fixture(scope="session", autouse=True)
 def initialize_database():
     try:
@@ -71,7 +77,7 @@ def initialize_database():
     except Exception as e:
         pytest.fail(f"Failed to initialize the database: {str(e)}")
 
-# this function setup and tears down (drops tales) for each test function, so you have a clean database for each test.
+# this function setup and tears down (drops tables) for each test function, so you have a clean database for each test.
 @pytest.fixture(scope="function", autouse=True)
 async def setup_database():
     async with engine.begin() as conn:
@@ -215,7 +221,7 @@ async def manager_user(db_session: AsyncSession):
 @pytest.fixture
 def user_base_data():
     return {
-        "username": "john_doe_123",
+        "nickname": "john_doe_123",  # Added nickname here
         "email": "john.doe@example.com",
         "full_name": "John Doe",
         "bio": "I am a software engineer with over 5 years of experience.",
@@ -225,7 +231,7 @@ def user_base_data():
 @pytest.fixture
 def user_base_data_invalid():
     return {
-        "username": "john_doe_123",
+        "nickname": "john_doe_123",  # Added nickname here
         "email": "john.doe.example.com",
         "full_name": "John Doe",
         "bio": "I am a software engineer with over 5 years of experience.",
@@ -241,6 +247,7 @@ def user_create_data(user_base_data):
 def user_update_data():
     return {
         "email": "john.doe.new@example.com",
+        "first_name": "John",  # Added first_name here
         "full_name": "John H. Doe",
         "bio": "I specialize in backend development with Python and Node.js.",
         "profile_picture_url": "https://example.com/profile_pictures/john_doe_updated.jpg"
@@ -249,7 +256,7 @@ def user_update_data():
 @pytest.fixture
 def user_response_data():
     return {
-        "id": "unique-id-string",
+        "id": str(uuid.uuid4()),  # Changed to a valid UUID
         "username": "testuser",
         "email": "test@example.com",
         "last_login_at": datetime.now(),
@@ -260,4 +267,4 @@ def user_response_data():
 
 @pytest.fixture
 def login_request_data():
-    return {"username": "john_doe_123", "password": "SecurePassword123!"}
+    return {"email": "john.doe@example.com", "password": "SecurePassword123!"}  # Added email here

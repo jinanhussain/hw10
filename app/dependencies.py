@@ -1,4 +1,3 @@
-from builtins import Exception, dict, str
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +6,6 @@ from app.utils.template_manager import TemplateManager
 from app.services.email_service import EmailService
 from app.services.jwt_service import decode_token
 from settings.config import Settings
-from fastapi import Depends
 
 def get_settings() -> Settings:
     """Return application settings."""
